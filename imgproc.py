@@ -54,17 +54,16 @@ for f in files:
              y_cent_row / float(max_val))  # distance from x centroid vs. relative intensity
     plt.subplot(122)
     plt.plot((range(x_cent_col.shape[0]) - i_avg) * cal, x_cent_col / float(max_val))
-    # plt.savefig(join(data_path, f[:-4] + "_plots.png"))  # the -4 removes the .bmp extension
-    plt.show()
-    # plt.close()
+    plt.savefig(join(data_path, f[:-4] + "_plots.png"))  # the -4 removes the .bmp extension
+    plt.close()
 
     i_ssr = 0
     j_ssr = 0
     for (j, i), v in np.ndenumerate(img):
         i_ssr += (i - i_avg) ** 2 * v
         j_ssr += (j - j_avg) ** 2 * v
-    x_rms = np.sqrt(i_ssr) / img_sum * cal
-    y_rms = np.sqrt(j_ssr) / img_sum * cal
+    x_rms = np.sqrt(i_ssr / img_sum) * cal
+    y_rms = np.sqrt(j_ssr / img_sum) * cal
     output.write("{0},{1},{2}\n".format(f, 2 * x_rms, 2 * y_rms))
 
 if len(files) > 0:
