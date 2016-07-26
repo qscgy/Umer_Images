@@ -8,6 +8,12 @@ from scipy import misc
 
 __ending__ = "_cropped.bmp"  # ending of filename for files to be processed
 
+
+def to_8bit(im):
+    im = np.mean(im, axis=2)
+    return im
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('path', help="Path to directory with images")
 parser.add_argument('cal', help="mm/pixel in images", type=float)
@@ -19,7 +25,7 @@ files = [f for f in listdir(path) if (isfile(join(path, f)) and f.__contains__(_
 
 data_path = join(path, "data/")
 
-# only create new directory if there are files to process
+# only create a new directory if there are files to process
 if len(files) > 0:
     if not isdir(data_path):
         os.makedirs(data_path)
@@ -30,6 +36,7 @@ output.write("File name,2rms X radius (mm),2rms Y radius (mm)\n")
 for f in files:
     print "Processing " + f
     img = misc.imread(join(path, f))
+    img = to_8bit(img)
     max_val = np.amax(img)
     min_val = np.amin(img)
     img -= min_val  # filter out background
