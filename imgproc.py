@@ -4,7 +4,8 @@ import argparse
 from os.path import isfile, join, isdir
 import os
 from os import listdir
-from scipy import misc
+from scipy import misc, ndimage
+from scipy.signal import correlate2d
 
 __ending__ = "_cropped.bmp"  # ending of filename for files to be processed
 
@@ -36,7 +37,14 @@ output.write("File name,2rms X radius (mm),2rms Y radius (mm)\n")
 for f in files:
     print "Processing " + f
     img = misc.imread(join(path, f))
-    img = to_8bit(img)
+    full_img = misc.imread(join(path, f[:-len(__ending__)]) + ".bmp")  # uncropped photo
+
+    full_img_blurred = ndimage.filters.gaussian_filter(full_img, 2)
+    img_blurred = ndimage.filters.gaussian_filter(img, 2)
+    f_brightest = np.argmax(full_img_blurred)
+    brightest = np.argmax(img_blurred)
+    offset = (f_brightest[0] - brightest[0], f_brightest[1] - brightest[1])  # offset between cropped and full images
+
     max_val = np.amax(img)
     min_val = np.amin(img)
     img -= min_val  # filter out background
@@ -49,6 +57,11 @@ for f in files:
         j_avg += (j * v)  # y moment
     i_avg /= img_sum
     j_avg /= img_sum
+
+    centroid = (i_avg, j_avg)
+    center = (306.0, 247.0)
+    abs_centroid = centroid + offset
+    skew = abs_centroid - center
 
     # plot intensity distributions along axes that go through the beam centroid (should be K-V-like)
     p = round(i_avg)
