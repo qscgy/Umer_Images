@@ -41,9 +41,10 @@ for f in files:
 
     full_img_blurred = ndimage.filters.gaussian_filter(full_img, 2)
     img_blurred = ndimage.filters.gaussian_filter(img, 2)
-    f_brightest = np.argmax(full_img_blurred)
-    brightest = np.argmax(img_blurred)
-    offset = (f_brightest[0] - brightest[0], f_brightest[1] - brightest[1])  # offset between cropped and full images
+    f_brightest = np.unravel_index(np.argmax(full_img_blurred), full_img.shape)
+    brightest = np.unravel_index(np.argmax(img_blurred), img.shape)
+    offset = np.array(
+        [f_brightest[0] - brightest[0], f_brightest[1] - brightest[1]])  # offset between cropped and full images
 
     max_val = np.amax(img)
     min_val = np.amin(img)
@@ -58,10 +59,11 @@ for f in files:
     i_avg /= img_sum
     j_avg /= img_sum
 
-    centroid = (i_avg, j_avg)
-    center = (306.0, 247.0)
+    centroid = np.array([i_avg, j_avg])
+    center = np.array([306.0, 247.0])
     abs_centroid = centroid + offset
-    skew = abs_centroid - center
+    skew = (abs_centroid - center) * cal
+    print abs_centroid
 
     # plot intensity distributions along axes that go through the beam centroid (should be K-V-like)
     p = round(i_avg)
@@ -72,9 +74,15 @@ for f in files:
     plt.subplot(121)
     plt.plot((range(y_cent_row.shape[0]) - j_avg) * cal,
              y_cent_row / float(max_val))  # distance from x centroid vs. relative intensity
+    plt.title("Y")
+    plt.xlabel("Distance from y centroid (mm)")
+    plt.ylabel("Relative intensity")
     plt.subplot(122)
     plt.plot((range(x_cent_col.shape[0]) - i_avg) * cal, x_cent_col / float(max_val))
-    plt.savefig(join(data_path, f[:-4] + "_plots.png"))  # the -4 removes the .bmp extension
+    plt.title("X")
+    plt.xlabel("Distance from x centroid (mm)")
+    plt.ylabel("Relative intensity")
+    plt.savefig(join(data_path, f[:-4] + "_plots.png"))  # the -4 removes the ".bmp" extension
     plt.close()
 
     i_ssr = 0
