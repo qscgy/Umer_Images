@@ -5,7 +5,7 @@ from os.path import isfile, join, isdir
 import os
 from os import listdir
 from scipy import misc, ndimage
-from scipy.signal import correlate2d
+from mpl_toolkits.mplot3d import Axes3D
 
 __ending__ = "_cropped.bmp"  # ending of filename for files to be processed
 
@@ -85,7 +85,22 @@ for f in files:
     plt.savefig(join(data_path, f[:-4] + "_plots.png"))  # the -4 removes the ".bmp" extension
     plt.close()
 
-    i_ssr = 0
+    '''
+    figure = plt.figure()
+    ax = figure.add_subplot(111, projection="3d")
+    x_coords = []
+    y_coods = []
+    z = []
+    for (j,i),v in np.ndenumerate(img):
+        x_coords.append(i)
+        y_coods.append(j)
+        z.append(v)
+
+    ax.scatter(x_coords,y_coods,z,c='r',marker='o')
+    plt.show()
+    '''
+
+    i_ssr = 0   #sum squared residuals
     j_ssr = 0
     for (j, i), v in np.ndenumerate(img):
         i_ssr += (i - i_avg) ** 2 * v
