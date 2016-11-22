@@ -17,8 +17,10 @@ def to_8bit(im):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("filename", help="Name of the image to plot")
+parser.add_argument('-a', help="create animated frames", action="store_true")
 args = parser.parse_args()
 filename = args.filename
+animate = args.a
 
 
 print "Processing " + filename
@@ -29,7 +31,7 @@ min_val = np.amin(img)
 img -= min_val  # filter out background
 
 figure = plt.figure()
-ax = figure.add_subplot(111, projection="3d")
+ax = Axes3D(figure)
 x_coords = []
 y_coords = []
 z = []
@@ -40,8 +42,16 @@ for (j,i),v in np.ndenumerate(img):
         z.append(v)
 
 #ax.scatter(x_coords,y_coords,z,c='r',marker='o')
-ax.plot_wireframe(x_coords,y_coords,z,rstride=40,cstride=40)
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
+ax.plot_wireframe(x_coords, y_coords, z, rstride=40, cstride=40)
+ax.set_xlabel('X pixel')
+ax.set_ylabel('Y pixel')
+ax.set_zlabel('Intensity')
+save_path = "/Users/sam/Documents/animations/"
+#figure.savefig("/Users/sam/Documents/animations/movie_test.png")
+if animate:
+    for ii in xrange(0,360,20):
+        ax.view_init(elev=10., azim=ii)
+        file_str = "movie{0}.png".format(ii)
+        file_path = os.path.join(save_path, file_str)
+        plt.savefig(file_path)
 plt.show()

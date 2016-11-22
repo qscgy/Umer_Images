@@ -6,6 +6,8 @@ import os
 from os import listdir
 from scipy import misc, ndimage
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.mlab as mlab
+import math
 
 __ending__ = "_cropped.bmp"  # ending of filename for files to be processed
 
@@ -18,9 +20,11 @@ def to_8bit(im):
 parser = argparse.ArgumentParser()
 parser.add_argument('path', help="Path to directory with images")
 parser.add_argument('cal', help="mm/pixel in images", type=float)
+parser.add_argument('-d', help="overlay normal distributions", action="store_true")
 args = parser.parse_args()
 cal = args.cal
 path = args.path
+plot_distr = args.d
 
 files = [f for f in listdir(path) if (isfile(join(path, f)) and f.__contains__(__ending__))]
 
@@ -48,7 +52,7 @@ for f in files:
 
     max_val = np.amax(img)
     min_val = np.amin(img)
-    img -= min_val  # filter out background
+    img -= min_val  # filter out background noise
 
     img_sum = np.sum(img)
     i_avg = 0  # x centroid
@@ -65,6 +69,24 @@ for f in files:
     skew = (abs_centroid - center) * cal
     print abs_centroid
 
+    i_ssr = 0   #sum squared residuals
+    j_ssr = 0
+    for (j, i), v in np.ndenumerate(img):
+        i_ssr += (i - i_avg) ** 2 * v
+        j_ssr += (j - j_avg) ** 2 * v
+    x_rms = np.sqrt(i_ssr / img_sum) * cal  #also the standard deviation
+    y_rms = np.sqrt(j_ssr / img_sum) * cal
+
+    #calculate normal distributions
+    mu_x = 0
+    x_distr = np.linspace(-3*x_rms, 3*x_rms, 100)   #3 standard deviations
+    x_distr_plot = mlab.normpdf(x_distr, mu_x, x_rms)   #Normal distribution
+    x_multiplier = 1/x_distr_plot[len(x_distr_plot)/2]  #scale so max=1
+    mu_y = 0
+    y_distr = np.linspace(-3*y_rms, 3*y_rms, 100)
+    y_distr_plot = mlab.normpdf(y_distr, mu_y, y_rms)
+    y_multiplier = 1/y_distr_plot[len(y_distr_plot)/2]
+
     # plot intensity distributions along axes that go through the beam centroid (should be K-V-like)
     p = round(i_avg)
     q = round(j_avg)
@@ -73,12 +95,16 @@ for f in files:
     plt.figure(1)
     plt.subplot(121)
     plt.plot((range(y_cent_row.shape[0]) - j_avg) * cal,
-             y_cent_row / float(max_val))  # distance from x centroid vs. relative intensity
+             y_cent_row / float(max_val-min_val))  # distance from x centroid vs. relative intensity
+    if plot_distr:
+        plt.plot(x_distr, x_distr_plot*x_multiplier)
     plt.title("Y")
     plt.xlabel("Distance from y centroid (mm)")
     plt.ylabel("Relative intensity")
     plt.subplot(122)
-    plt.plot((range(x_cent_col.shape[0]) - i_avg) * cal, x_cent_col / float(max_val))
+    plt.plot((range(x_cent_col.shape[0]) - i_avg) * cal, x_cent_col / float(max_val-min_val))   #normalize so the max value=1
+    if plot_distr:
+        plt.plot(y_distr, y_distr_plot*y_multiplier)
     plt.title("X")
     plt.xlabel("Distance from x centroid (mm)")
     plt.ylabel("Relative intensity")
@@ -99,14 +125,6 @@ for f in files:
     ax.scatter(x_coords,y_coods,z,c='r',marker='o')
     plt.show()
     '''
-
-    i_ssr = 0   #sum squared residuals
-    j_ssr = 0
-    for (j, i), v in np.ndenumerate(img):
-        i_ssr += (i - i_avg) ** 2 * v
-        j_ssr += (j - j_avg) ** 2 * v
-    x_rms = np.sqrt(i_ssr / img_sum) * cal
-    y_rms = np.sqrt(j_ssr / img_sum) * cal
     output.write("{0},{1},{2}\n".format(f, 2 * x_rms, 2 * y_rms))
 
 if len(files) > 0:
